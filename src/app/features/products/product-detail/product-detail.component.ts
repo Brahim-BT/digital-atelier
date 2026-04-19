@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ProductService, CartService } from '@core/services';
+import { ProductService, CartService, FavoritesService } from '@core/services';
 import { Product, ProductColor } from '@shared/models';
 import { ProductCardComponent } from '@shared/components';
 import { FormsModule } from '@angular/forms';
@@ -110,8 +110,19 @@ import { MessageService } from 'primeng/api';
               <button pButton label="Add to Bag" class="add-to-cart-btn" (click)="addToCart()">
                 <i class="pi pi-shopping-bag"></i>
               </button>
-              <button pButton [outlined]="true" class="wishlist-btn">
-                <i class="pi pi-heart"></i>
+              <button 
+                pButton 
+                [outlined]="true" 
+                class="wishlist-btn"
+                [class.is-favorite]="isFavorite()"
+                (click)="toggleFavorite()"
+                [attr.aria-label]="isFavorite() ? 'Remove from favorites' : 'Add to favorites'"
+              >
+                @if (isFavorite()) {
+                  <i class="pi pi-heart-fill"></i>
+                } @else {
+                  <i class="pi pi-heart"></i>
+                }
               </button>
             </div>
             
@@ -237,6 +248,15 @@ import { MessageService } from 'primeng/api';
     .add-to-cart-btn { flex: 1; height: 56px; }
     .add-to-cart-btn i { font-size: 1.25rem; }
     .wishlist-btn { width: 56px; height: 56px; }
+    .wishlist-btn.is-favorite { 
+      background: var(--accent-error); 
+      border-color: var(--accent-error); 
+      color: #ffffff; 
+    }
+    .wishlist-btn.is-favorite:hover { 
+      background: #dc2626; 
+      border-color: #dc2626; 
+    }
     
     .product-details-accordion { border-top: 1px solid var(--surface-border); }
     .detail-section { border-bottom: 1px solid var(--surface-border); }
@@ -276,6 +296,7 @@ export class ProductDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private productService = inject(ProductService);
   private cartService = inject(CartService);
+  private favoritesService = inject(FavoritesService);
   private messageService = inject(MessageService);
   
   loading = signal(true);
@@ -285,6 +306,7 @@ export class ProductDetailComponent implements OnInit {
   selectedColor = signal<ProductColor | null>(null);
   selectedSize = signal('');
   quantity = 1;
+  isFavorite = signal(false);
   openSections: Record<string, boolean> = { description: true, specs: false, shipping: false };
   
   async ngOnInit(): Promise<void> {
@@ -302,6 +324,7 @@ export class ProductDetailComponent implements OnInit {
       this.selectedImage.set(product.images[0]);
       this.selectedColor.set(product.colors.find(c => c.available) || product.colors[0]);
       this.selectedSize.set(product.sizes[0]);
+      this.isFavorite.set(this.favoritesService.isFavorite(product.id));
       const allProducts = await this.productService.getProducts();
       const related = allProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, 4);
       this.relatedProducts.set(related.length > 0 ? related : allProducts.filter(p => p.id !== product.id).slice(0, 4));
@@ -332,6 +355,19 @@ export class ProductDetailComponent implements OnInit {
     if (p && color) {
       this.cartService.addItem(p, color, this.selectedSize(), this.quantity);
       this.messageService.add({ severity: 'success', summary: 'Added to Bag', detail: `${p.name} has been added to your bag` });
+    }
+  }
+  
+  toggleFavorite(): void {
+    const p = this.product();
+    if (p) {
+      this.favoritesService.toggleFavorite(p);
+      this.isFavorite.set(this.favoritesService.isFavorite(p.id));
+this.messageService.add({ 
+        severity: 'info', 
+        summary: this.isFavorite() ? 'Added to Wishlist' : 'Removed from Wishlist', 
+        detail: this.isFavorite() ? `${p.name} has been added to your wishlist` : `${p.name} has been removed from your wishlist`
+      });
     }
   }
 }

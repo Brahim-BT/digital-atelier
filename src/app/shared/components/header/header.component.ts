@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { CartService, AuthService, ThemeService } from '@core/services';
+import { CartService, AuthService, ThemeService, FavoritesService } from '@core/services';
 import { BadgeModule } from 'primeng/badge';
 import { InputTextModule } from 'primeng/inputtext';
 import { RippleModule } from 'primeng/ripple';
@@ -52,8 +52,11 @@ import { FormsModule } from '@angular/forms';
             }
           </button>
           
-          <button pRipple class="icon-btn" routerLink="/wishlist">
+          <button pRipple class="icon-btn wishlist-btn" routerLink="/wishlist">
             <span class="material-symbols-outlined">favorite_border</span>
+            @if (favoritesService.favoriteCount() > 0) {
+              <span class="wishlist-badge">{{ favoritesService.favoriteCount() }}</span>
+            }
           </button>
           
           <button pRipple class="icon-btn cart-btn" routerLink="/cart">
@@ -211,10 +214,6 @@ import { FormsModule } from '@angular/forms';
       color: var(--primary-color);
     }
     
-    .cart-btn {
-      position: relative;
-    }
-    
     .cart-badge {
       position: absolute;
       top: 4px;
@@ -224,6 +223,26 @@ import { FormsModule } from '@angular/forms';
       border-radius: 50%;
       background: var(--primary-color);
       color: var(--primary-color-text);
+      font-size: 0.625rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .wishlist-btn {
+      position: relative;
+    }
+    
+    .wishlist-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-error);
+      color: #ffffff;
       font-size: 0.625rem;
       font-weight: 700;
       display: flex;
@@ -253,6 +272,7 @@ export class HeaderComponent {
   cartService = inject(CartService);
   authService = inject(AuthService);
   themeService = inject(ThemeService);
+  favoritesService = inject(FavoritesService);
   searchQuery = '';
   
   toggleTheme(): void {

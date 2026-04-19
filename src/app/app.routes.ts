@@ -39,6 +39,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
   },
   {
+    path: 'wishlist',
+    loadComponent: () => import('./features/wishlist/wishlist.component').then(m => m.WishlistComponent)
+  },
+  {
     path: '**',
     redirectTo: 'home'
   }

@@ -1,14 +1,17 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Product } from '@shared/models';
+import { FavoritesService } from '@core/services';
 import { RatingModule } from 'primeng/rating';
 import { RippleModule } from 'primeng/ripple';
+import { ButtonModule } from 'primeng/button';
+
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [RouterLink, RatingModule, RippleModule, FormsModule],
+  imports: [RouterLink, RatingModule, RippleModule, ButtonModule, FormsModule],
   template: `
     <article class="product-card" pRipple [routerLink]="['/products', product.id]">
       <div class="product-image-container">
@@ -19,6 +22,18 @@ import { FormsModule } from '@angular/forms';
         @if (product.originalPrice) {
           <span class="sale-badge">Sale</span>
         }
+        <button 
+          class="favorite-btn" 
+          [class.is-favorite]="favoritesService.isFavorite(product.id)"
+          (click)="toggleFavorite($event)"
+          [attr.aria-label]="favoritesService.isFavorite(product.id) ? 'Remove from favorites' : 'Add to favorites'"
+        >
+          @if (favoritesService.isFavorite(product.id)) {
+            <span class="material-symbols-outlined filled">favorite</span>
+          } @else {
+            <span class="material-symbols-outlined">favorite_border</span>
+          }
+        </button>
       </div>
       
       <div class="product-info">
@@ -118,6 +133,50 @@ import { FormsModule } from '@angular/forms';
       border-radius: 4px;
     }
     
+    .favorite-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      opacity: 0;
+      
+      .material-symbols-outlined {
+        font-size: 1.25rem;
+      }
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.6);
+        transform: scale(1.1);
+      }
+      
+      &.is-favorite {
+        opacity: 1;
+        background: var(--accent-error);
+        
+        .filled {
+          font-variation-settings: 'FILL' 1;
+        }
+        
+        &:hover {
+          background: #dc2626;
+        }
+      }
+    }
+    
+    .product-card:hover .favorite-btn {
+      opacity: 1;
+    }
+    
     .product-info {
       padding: 1.25rem;
     }
@@ -185,7 +244,14 @@ import { FormsModule } from '@angular/forms';
 export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
   
+  favoritesService = inject(FavoritesService);
+  
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  }
+  
+  toggleFavorite(event: Event): void {
+    event.stopPropagation();
+    this.favoritesService.toggleFavorite(this.product);
   }
 }
